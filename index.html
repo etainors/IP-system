@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Tor socks5/http proxy</title>
+<script>
+function ajax(u) {
+    var xmlhttp;
+    if (window.XMLHttpRequest) xmlhttp = new XMLHttpRequest();
+    else xmlhttp = new ActiveXObject('Microsoft.XMLHTTP');
+    xmlhttp.open('GET', u, false);
+    xmlhttp.send();
+    var r = xmlhttp.responseText;
+    try {
+        return JSON.parse(r);
+    } catch (e) {
+        return false;
+    }
+}
+function ip_query() {
+    var ip = document.getElementById('ip').value;
+    var data = ajax('/ip/'+ip);
+    if (data) {
+        r =
+        ['ip', 'country', 'country2', 'city', 'describe', 'latitude', 'longitude']
+        .filter(function(i){return i in data})
+        .map(function(i){return '<tr><td>'+i+'</td><td>'+data[i]+'</td></tr>'})
+        .join('');
+        document.getElementById('result').innerHTML = '<hr><table border=1>'+r+'</table>';
+    }
+}
+// chick ip: /ip/*.*.*.*
+// get country ip: /country/CN
+</script>
+</head>
+<body>
+<center>
+IP:<input id="ip"><button onclick='ip_query();'>查詢</button><br>
+<div id="result"></div>
+<hr>
+%s
+</center>
+</body>
+</html>
