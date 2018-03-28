@@ -6,17 +6,14 @@ import ipaddress
 def ip2int(ip):
     try:
         ip = map(int, ip.split('.'))
-        if len(ip) != 4 or any(map(lambda i:i < 0 or i > 255, ip)):
-            return -1
-        n = sum(map(lambda i:ip[i]<<8*(3-i), range(4)))
-        return -1 if n > 0xffffffff else n
+        return -1 if len(ip) != 4 or any(map(lambda i:i < 0 or i > 255, ip)) else sum(map(lambda i:ip[i]<<(3-i<<3), range(4)))
     except:
         return -1
 
 def int2ip(n):
     try:
         n = int(n)
-        return '.'.join(map(lambda i:str((n&255*2**i)>>i), [24, 16, 8, 0]))
+        return '' if n < 0 or n > 0xffffffff else '.'.join(map(lambda i:str((n&255<<i)>>i), [24, 16, 8, 0]))
     except:
         return ''
 
