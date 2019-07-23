@@ -1,7 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 import sqlite3
-import ipaddress
 
 def ip2int(ip):
     try:
@@ -21,39 +20,33 @@ def ip_query(ip):
     conn = sqlite3.connect('maxmind/geoip.db')
     c = conn.cursor()
     n = ip2int(ip)
-    locId = 0
-    country = ''
-    country2 = ''
+    geoname_id = ''
+    geoname_id2 = ''
     describe = ''
-    for i in c.execute('SELECT `4` FROM Geo_IP_Country_Whois WHERE `2`<=? AND `3`>=?', (n, n)):
-        country2 = i[0]
-    for i in c.execute('SELECT locId FROM GeoLite_City_Blocks WHERE startIpNum<=? AND endIpNum>=?', (n, n)):
-        locId = i[0]
-    try:
-        for i in c.execute('SELECT * FROM GeoLite_City_Location WHERE locId=?', (locId, )):
-            locId, country, region, city, postalCode, latitude, longitude, mertoCode, areaCode = i
-    except sqlite3.OperationalError:
-        for i in c.execute('SELECT locId,country,region,postalCode,latitude,longitude,areaCode FROM GeoLite_City_Location WHERE locId=?', (locId, )):
-            locId, country, region, postalCode, latitude, longitude, areaCode = i
-            city, mertoCode = '', ''
+    for i in c.execute('SELECT geoname_id FROM GeoLite2_Country_Blocks_IPv4 WHERE startIpNum<=? AND endIpNum>=?', (n, n)):
+        geoname_id = i[0]
+    for i in c.execute('SELECT * FROM GeoLite2_Country_Locations_en WHERE geoname_id=?', (geoname_id, )):
+        geoname_id, locale_code, continent_code, continent_name, country_iso_code, country_name, is_in_european_union = i
+    for i in c.execute('SELECT geoname_id,is_anonymous_proxy,is_satellite_provider,postal_code,latitude,longitude,accuracy_radius FROM GeoLite2_City_Blocks_IPv4 WHERE startIpNum<=? AND endIpNum>=?', (n, n)):
+        geoname_id2, is_anonymous_proxy, is_satellite_provider, postal_code, latitude, longitude, accuracy_radius = i
+    for i in c.execute('SELECT * FROM GeoLite2_City_Locations_en WHERE geoname_id=?', (geoname_id2, )):
+        geoname_id2, locale_code, continent_code, continent_name, country_iso_code, country_name, subdivision_1_iso_code, subdivision_1_name, subdivision_2_iso_code, subdivision_2_name, city_name, metro_code, time_zone, is_in_european_union = i
+    if geoname_id2 == geoname_id:
+        del geoname_id2
     conn.close()
     conn = sqlite3.connect('qqwry/geoip.db')
     c = conn.cursor()
     for i in c.execute('SELECT describe FROM qqwry WHERE startIpNum<=? AND endIpNum>=?', (n, n)):
         describe = i[0].replace('CZ88.NET', '').replace(u'\u81fa\u7063\u7701', u'\u81fa\u7063')
     conn.close()
-    if country2 == country:
-        del country2
     del conn, c, i
     return locals()
 
 def country_range(country):
     conn = sqlite3.connect('maxmind/geoip.db')
     c = conn.cursor()
-    r = []
-    for i in c.execute('SELECT `0`,`1` FROM Geo_IP_Country_Whois WHERE `4`=?', (country, )):
-        r += map(str, map(lambda i:i, ipaddress.summarize_address_range(*map(ipaddress.ip_address, i))))
-    return r
+    geoname_id = map(lambda i:i[0], c.execute('SELECT geoname_id FROM GeoLite2_Country_Locations_en WHERE country_iso_code=?', (country, )))
+    return map(lambda i:i[0], c.execute('SELECT network FROM GeoLite2_Country_Blocks_IPv4 WHERE '+' or '.join(['geoname_id=?']*len(geoname_id)), tuple(geoname_id))) if geoname_id else []
 
 if __name__ == '__main__':
     from maxmind import sync as maxmind

@@ -22,7 +22,7 @@ function ip_query() {
     var data = ajax('/ip/'+ip);
     if (data) {
         r =
-        ['ip', 'country', 'country2', 'city', 'describe', 'latitude', 'longitude']
+        ['ip', 'country_iso_code', 'country_name', 'subdivision_1_name', 'city_name', 'describe', 'latitude', 'longitude']
         .filter(function(i){return i in data})
         .map(function(i){return '<tr><td>'+i+'</td><td>'+data[i]+'</td></tr>'})
         .join('');
